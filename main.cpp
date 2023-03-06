@@ -21,6 +21,7 @@ public:
     void run()
     {
 #if 0
+        // Naive copy in one thread
         char c{};
         _inFile.get(c);
 
