@@ -52,8 +52,6 @@ private:
                 }
             }
 
-            _phase.fetch_add(1, std::memory_order_release);
-
             { // Read for second line of cache
                 std::lock_guard lk(_mtx2);
 
@@ -69,14 +67,12 @@ private:
                     ++readerCounter;
                 }
             }
-
-            _phase.fetch_add(1, std::memory_order_release);
         }
     }
 
     void asyncWriteToFile()
     {
-        while (_counter.load(std::memory_order_acquire) == 0 && _phase.load(std::memory_order_acquire) == 0)
+        while (_counter.load(std::memory_order_acquire) == 0)
         {
         }
 
@@ -116,7 +112,6 @@ private:
     bool _endOfRead{false};
 
     std::atomic<int64_t> _counter{0};
-    std::atomic<int64_t> _phase{0};
     size_t readerCounter{0};
     size_t writeCounter{0};
 
