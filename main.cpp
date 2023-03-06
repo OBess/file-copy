@@ -29,16 +29,15 @@ public:
         //     _inFile.get(c);
         // }
 
-        [[maybe_unused]] std::jthread threadReader{[this]
-                                                   {
-                                                       asyncReadFile();
-                                                       std::cout << "Read bytes: " << readerCounter << '\n';
-                                                   }};
-        [[maybe_unused]] std::jthread threadWriter{[this]
-                                                   {
-                                                       asyncWriteToFile();
-                                                       std::cout << "Wrote bytes: " << writeCounter << '\n';
-                                                   }};
+        std::jthread threadReader{[this]
+                                  { asyncReadFile(); }};
+        std::jthread threadWriter{[this]
+                                  { asyncWriteToFile(); }};
+        threadReader.join();
+        threadWriter.join();
+
+        std::cout << "Read bytes: " << readerCounter << '\n';
+        std::cout << "Wrote bytes: " << writeCounter << '\n';
     }
 
 private:
@@ -48,24 +47,18 @@ private:
         {
             { // Read for first line of cache
                 std::unique_lock lk(_mtx1);
-
                 for (size_t i = 0; i < _bufferLineSize; ++i)
                 {
                     _inFile.get(_buffer1[i]);
-
-                    _counter.fetch_add(1, std::memory_order_release);
                     ++readerCounter;
                 }
             }
 
             { // Read for second line of cache
                 std::unique_lock lk(_mtx2);
-
                 for (size_t i = 0; i < _bufferLineSize; ++i)
                 {
                     _inFile.get(_buffer2[i]);
-
-                    _counter.fetch_add(1, std::memory_order_release);
                     ++readerCounter;
                 }
             }
@@ -78,7 +71,6 @@ private:
         {
             { // Write first line of cache to file
                 std::unique_lock lk(_mtx1);
-
                 for (size_t i = 0; i < _bufferLineSize && _sizeOfFile > 0; ++i)
                 {
                     _outFile << _buffer1[i];
@@ -90,7 +82,6 @@ private:
 
             { // Write second line of cache to file
                 std::unique_lock lk(_mtx2);
-
                 for (size_t i = 0; i < _bufferLineSize && _sizeOfFile > 0; ++i)
                 {
                     _outFile << _buffer2[i];
@@ -107,7 +98,6 @@ private:
     std::ofstream _outFile;
     std::mutex _mtx1, _mtx2;
 
-    std::atomic<int64_t> _counter{0};
     size_t readerCounter{0};
     size_t writeCounter{0};
 
@@ -170,6 +160,8 @@ int main(int argc, const char *argv[])
 
     in_filepath = "C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\lab 1.docx";
     out_filepath = "C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\output.docx";
+    // in_filepath = "C:\\My\\Projects\\cpp\\file-copy\\.gitignore";
+    // out_filepath = "C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\gitignore.txt";
 
     copy copyInstance{in_filepath, out_filepath};
     copyInstance.run();
