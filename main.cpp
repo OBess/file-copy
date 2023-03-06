@@ -76,7 +76,7 @@ private:
         {
         }
 
-        while (_phase.load(std::memory_order_acquire) > 0)
+        while (_counter.load(std::memory_order_acquire) > 0)
         {
             { // Write first line of cache to file
                 std::lock_guard lk(_mtx1);
