@@ -16,5 +16,5 @@ if (MSVC)
 else()
 endif()
 
-target_include_directories(file-copy PRIVATE ${Boost_INCLUDE_DIR})
+target_include_directories(file-copy PRIVATE include ${Boost_INCLUDE_DIR})
 target_link_libraries(file-copy PRIVATE ${Boost_LIBRARIES} Boost::program_options)
