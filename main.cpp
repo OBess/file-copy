@@ -1,5 +1,4 @@
 #include <atomic>
-#include <barrier>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -120,8 +119,6 @@ private:
     std::atomic<int64_t> _phase{0};
     size_t readerCounter{0};
     size_t writeCounter{0};
-
-    std::barrier _bar;
 
     static constexpr size_t _bufferLineSize =
         std::hardware_destructive_interference_size;
