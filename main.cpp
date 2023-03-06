@@ -14,7 +14,7 @@ public:
     copy(const std::string &in_filepath, const std::string &out_filepath)
         : _inFile{in_filepath, std::ios_base::binary},
           _outFile{out_filepath, std::ios_base::binary},
-          _sizeOfFile{std::filesystem::file_size(in_filepath)}
+          _remainedSymbols{std::filesystem::file_size(in_filepath)}
     {
     }
 
@@ -47,7 +47,7 @@ private:
         {
             { // Read for first line of cache
                 std::unique_lock lk(_mtx1);
-                for (size_t i = 0; i < _bufferLineSize; ++i)
+                for (size_t i = 0; i < _bufferSize; ++i)
                 {
                     _inFile.get(_buffer1[i]);
                     ++readerCounter;
@@ -56,7 +56,7 @@ private:
 
             { // Read for second line of cache
                 std::unique_lock lk(_mtx2);
-                for (size_t i = 0; i < _bufferLineSize; ++i)
+                for (size_t i = 0; i < _bufferSize; ++i)
                 {
                     _inFile.get(_buffer2[i]);
                     ++readerCounter;
@@ -67,26 +67,26 @@ private:
 
     void asyncWriteToFile()
     {
-        while (_sizeOfFile > 0)
+        while (_remainedSymbols > 0)
         {
             { // Write first line of cache to file
                 std::unique_lock lk(_mtx1);
-                for (size_t i = 0; i < _bufferLineSize && _sizeOfFile > 0; ++i)
+                for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
                 {
                     _outFile << _buffer1[i];
 
-                    --_sizeOfFile;
+                    --_remainedSymbols;
                     ++writeCounter;
                 }
             }
 
             { // Write second line of cache to file
                 std::unique_lock lk(_mtx2);
-                for (size_t i = 0; i < _bufferLineSize && _sizeOfFile > 0; ++i)
+                for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
                 {
                     _outFile << _buffer2[i];
 
-                    --_sizeOfFile;
+                    --_remainedSymbols;
                     ++writeCounter;
                 }
             }
@@ -96,17 +96,18 @@ private:
 private:
     std::ifstream _inFile;
     std::ofstream _outFile;
+
     std::mutex _mtx1, _mtx2;
 
     size_t readerCounter{0};
     size_t writeCounter{0};
 
-    size_t _sizeOfFile{0};
+    size_t _remainedSymbols{0};
 
-    static constexpr size_t _bufferLineSize =
+    static constexpr size_t _bufferSize =
         std::hardware_destructive_interference_size;
-    char _buffer1[_bufferLineSize]{};
-    char _buffer2[_bufferLineSize]{};
+    char _buffer1[_bufferSize]{};
+    char _buffer2[_bufferSize]{};
 };
 
 int main(int argc, const char *argv[])
