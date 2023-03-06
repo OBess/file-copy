@@ -94,6 +94,8 @@
         "filesystem": "cpp",
         "format": "cpp",
         "forward_list": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "semaphore": "cpp",
+        "barrier": "cpp"
     }
 }
