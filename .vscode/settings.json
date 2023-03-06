@@ -96,6 +96,7 @@
         "forward_list": "cpp",
         "iomanip": "cpp",
         "semaphore": "cpp",
-        "barrier": "cpp"
+        "barrier": "cpp",
+        "condition_variable": "cpp"
     }
 }
