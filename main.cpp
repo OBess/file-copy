@@ -20,15 +20,16 @@ public:
 
     void run()
     {
-        // char c{};
-        // _inFile.get(c);
+#if 0
+        char c{};
+        _inFile.get(c);
 
-        // while (_inFile)
-        // {
-        //     _outFile << c;
-        //     _inFile.get(c);
-        // }
-
+        while (_inFile)
+        {
+            _outFile << c;
+            _inFile.get(c);
+        }
+#else
         std::jthread threadReader{[this]
                                   { asyncReadFile(); }};
         std::jthread threadWriter{[this]
@@ -38,6 +39,7 @@ public:
 
         std::cout << "Read bytes: " << readerCounter << '\n';
         std::cout << "Wrote bytes: " << writeCounter << '\n';
+#endif
     }
 
 private:
