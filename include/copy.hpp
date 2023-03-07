@@ -21,24 +21,13 @@ namespace my
 
         void run()
         {
-#if 0
-        // Naive copy in one thread
-        char c{};
-        _inFile.get(c);
-
-        while (_inFile)
-        {
-            _outFile << c;
-            _inFile.get(c);
-        }
-#else
             std::jthread threadReader{[this]
                                       { asyncReadFile(); }};
             std::jthread threadWriter{[this]
                                       { asyncWriteToFile(); }};
 
             threadWriter.join();
-#endif
+
             std::cout << "1 file was copied!\n";
         }
 
@@ -55,8 +44,13 @@ namespace my
             while (_inFile)
             {
                 std::unique_lock lk(_mtx);
+                // clang-format off
                 _cv.wait(lk, [&]
-                         { return (bufferToWrite == 1 && !_readyToWrite1) || (bufferToWrite == 2 && !_readyToWrite2); });
+                    { 
+                        return (bufferToWrite == 1 && !_readyToWrite1) 
+                                   || (bufferToWrite == 2 && !_readyToWrite2); 
+                    });
+                // clang-format on
 
                 if (bufferToWrite == 1)
                 {
@@ -89,8 +83,13 @@ namespace my
             while (_remainedSymbols > 0)
             {
                 std::unique_lock lk(_mtx);
+                // clang-format off
                 _cv.wait(lk, [&]
-                         { return (bufferToWrite == 1 && _readyToWrite1) || (bufferToWrite == 2 && _readyToWrite2); });
+                    { 
+                        return (bufferToWrite == 1 && _readyToWrite1) 
+                                   || (bufferToWrite == 2 && _readyToWrite2); 
+                    });
+                // clang-format on
 
                 if (bufferToWrite == 1)
                 {
