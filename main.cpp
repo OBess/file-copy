@@ -36,28 +36,24 @@ int main(int argc, const char *argv[])
         std::cerr << e.what() << '\n';
     }
 
-    // if (in_filepath.empty())
-    // {
-    //     std::cerr << "There is no file to read!\n";
-    //     return -1;
-    // }
-    // else if (out_filepath.empty())
-    // {
-    //     std::cerr << "There is no file to write!\n";
-    //     return -1;
-    // }
+    if (in_filepath.empty())
+    {
+        std::cerr << "There is no file to read!\n";
+        return -1;
+    }
+    else if (out_filepath.empty())
+    {
+        std::cerr << "There is no file to write!\n";
+        return -1;
+    }
 
-    // if (std::filesystem::exists(in_filepath) == false)
-    // {
-    //     std::cerr << "This read file does not exist!\n";
-    //     return -1;
-    // }
+    if (std::filesystem::exists(in_filepath) == false)
+    {
+        std::cerr << "This read file does not exist!\n";
+        return -1;
+    }
 
-    my::copy copyInstance{"C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\lab 1.docx",
-                          "C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\output.docx"};
-    // my::copy copyInstance{"C:\\My\\Projects\\cpp\\file-copy\\.gitignore",
-    //                       "C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\gitignore.txt"};
-    // my::copy copyInstance{in_filepath, out_filepath};
+    my::copy copyInstance{in_filepath, out_filepath};
     copyInstance.run();
 
     return 0;
