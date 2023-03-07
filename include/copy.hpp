@@ -19,7 +19,8 @@ namespace my
         {
         }
 
-        void run()
+        /// @brief Runs two threads to async read-write data from one to another file
+        inline void run()
         {
             std::jthread threadReader{[this]
                                       { asyncReadFile(); }};
@@ -32,7 +33,8 @@ namespace my
         }
 
     private:
-        void asyncReadFile()
+        /// @brief Async read data from the input file to the buffer
+        inline void asyncReadFile()
         {
             if (!_inFile)
             {
@@ -71,7 +73,8 @@ namespace my
             }
         }
 
-        void asyncWriteToFile()
+        /// @brief Async write data from the buffer to the output file
+        inline void asyncWriteToFile()
         {
             if (!_outFile)
             {
