@@ -49,25 +49,20 @@ namespace my
     private:
         void asyncReadFile()
         {
+            
             while (_inFile)
             {
                 { // Read for first line of cache
                     std::unique_lock lk(_mtx1);
-                    for (size_t i = 0; i < _bufferSize; ++i)
-                    {
-                        _inFile.get(_buffer1[i]);
-                        ++readerCounter;
-                    }
+                    _inFile.read(_buffer1, _bufferSize);
                 }
 
                 { // Read for second line of cache
                     std::unique_lock lk(_mtx2);
-                    for (size_t i = 0; i < _bufferSize; ++i)
-                    {
-                        _inFile.get(_buffer2[i]);
-                        ++readerCounter;
-                    }
+                    _inFile.read(_buffer2, _bufferSize);
                 }
+
+                readerCounter += _bufferSize * 2;
             }
         }
 
@@ -103,7 +98,7 @@ namespace my
         std::ifstream _inFile;
         std::ofstream _outFile;
 
-        std::mutex _mtx1, _mtx2;
+        std::mutex _mtx1, _mtx2, _mtx3;
         std::condition_variable _cv1, _cv2;
 
         size_t readerCounter{0};
