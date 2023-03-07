@@ -1,12 +1,10 @@
 #ifndef __INCLUDE_COPY_HPP__
 #define __INCLUDE_COPY_HPP__
 
-#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mutex>
-#include <new>
 #include <thread>
 
 namespace my
@@ -38,59 +36,86 @@ namespace my
                                       { asyncReadFile(); }};
             std::jthread threadWriter{[this]
                                       { asyncWriteToFile(); }};
-            threadReader.join();
-            threadWriter.join();
 
-            std::cout << "Read bytes: " << readerCounter << '\n';
-            std::cout << "Wrote bytes: " << writeCounter << '\n';
+            threadWriter.join();
 #endif
+            std::cout << "1 file was copied!\n";
         }
 
     private:
         void asyncReadFile()
         {
-            
+            if (!_inFile)
+            {
+                return;
+            }
+
+            uint8_t bufferToWrite = 1;
+
             while (_inFile)
             {
-                { // Read for first line of cache
-                    std::unique_lock lk(_mtx1);
+                std::unique_lock lk(_mtx);
+                _cv.wait(lk, [&]
+                         { return (bufferToWrite == 1 && !_readyToWrite1) || (bufferToWrite == 2 && !_readyToWrite2); });
+
+                if (bufferToWrite == 1)
+                {
                     _inFile.read(_buffer1, _bufferSize);
-                }
 
-                { // Read for second line of cache
-                    std::unique_lock lk(_mtx2);
+                    bufferToWrite = 2;
+                    _readyToWrite1 = true;
+                }
+                else if (bufferToWrite == 2)
+                {
                     _inFile.read(_buffer2, _bufferSize);
+
+                    bufferToWrite = 1;
+                    _readyToWrite2 = true;
                 }
 
-                readerCounter += _bufferSize * 2;
+                _cv.notify_one();
             }
         }
 
         void asyncWriteToFile()
         {
+            if (!_outFile)
+            {
+                return;
+            }
+
+            uint8_t bufferToWrite = 1;
+
             while (_remainedSymbols > 0)
             {
-                { // Write first line of cache to file
-                    std::unique_lock lk(_mtx1);
+                std::unique_lock lk(_mtx);
+                _cv.wait(lk, [&]
+                         { return (bufferToWrite == 1 && _readyToWrite1) || (bufferToWrite == 2 && _readyToWrite2); });
+
+                if (bufferToWrite == 1)
+                {
                     for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
                     {
-                        _outFile << _buffer1[i];
-
+                        _outFile.put(_buffer1[i]);
                         --_remainedSymbols;
-                        ++writeCounter;
                     }
-                }
 
-                { // Write second line of cache to file
-                    std::unique_lock lk(_mtx2);
+                    bufferToWrite = 2;
+                    _readyToWrite1 = false;
+                }
+                else if (bufferToWrite == 2)
+                {
                     for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
                     {
-                        _outFile << _buffer2[i];
-
+                        _outFile.put(_buffer2[i]);
                         --_remainedSymbols;
-                        ++writeCounter;
                     }
+
+                    bufferToWrite = 1;
+                    _readyToWrite2 = false;
                 }
+
+                _cv.notify_one();
             }
         }
 
@@ -98,11 +123,10 @@ namespace my
         std::ifstream _inFile;
         std::ofstream _outFile;
 
-        std::mutex _mtx1, _mtx2, _mtx3;
-        std::condition_variable _cv1, _cv2;
-
-        size_t readerCounter{0};
-        size_t writeCounter{0};
+        std::mutex _mtx;
+        std::condition_variable _cv;
+        bool _readyToWrite1{false};
+        bool _readyToWrite2{false};
 
         size_t _remainedSymbols{0};
 
