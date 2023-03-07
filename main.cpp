@@ -57,6 +57,7 @@ int main(int argc, const char *argv[])
                           "C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\output.docx"};
     // my::copy copyInstance{"C:\\My\\Projects\\cpp\\file-copy\\.gitignore",
     //                       "C:\\My\\Projects\\cpp\\file-copy\\deploy\\Debug\\gitignore.txt"};
+    // my::copy copyInstance{in_filepath, out_filepath};
     copyInstance.run();
 
     return 0;
