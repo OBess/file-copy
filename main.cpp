@@ -21,8 +21,17 @@ int main(int argc, const char *argv[])
             ("in", po::value<std::string>(&in_filepath), "the file to read")
             ("out", po::value<std::string>(&out_filepath), "the file to write");
         // clang-format on
+
+        po::positional_options_description pod;
+        pod.add("in", 1);
+        pod.add("out", 2);
+
         po::variables_map vm;
-        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::store(po::command_line_parser(argc, argv)
+                      .options(desc)
+                      .positional(pod)
+                      .run(),
+                  vm);
         po::notify(vm);
 
         if (vm.count("help"))
