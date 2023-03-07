@@ -29,7 +29,7 @@ namespace my
 
             threadWriter.join();
 
-            std::cout << "1 file was copied!\n";
+            std::cout << "1 file was copied successfully!\n";
         }
 
     private:
