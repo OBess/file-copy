@@ -1,6 +1,7 @@
 #ifndef __INCLUDE_COPY_HPP__
 #define __INCLUDE_COPY_HPP__
 
+#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -41,35 +42,29 @@ namespace my
                 return;
             }
 
-            uint8_t bufferToWrite = 1;
-
             while (_inFile)
             {
-                std::unique_lock lk(_mtx);
-                // clang-format off
-                _cv.wait(lk, [&]
-                    { 
-                        return (bufferToWrite == 1 && !_readyToWrite1) 
-                                   || (bufferToWrite == 2 && !_readyToWrite2); 
-                    });
-                // clang-format on
-
-                if (bufferToWrite == 1)
                 {
+                    std::unique_lock lk(_mtx1);
+                    _cv1.wait(lk, [&]
+                              { return !_readyToWrite1.load(std::memory_order_acquire); });
+
                     _inFile.read(_buffer1, _bufferSize);
 
-                    bufferToWrite = 2;
-                    _readyToWrite1 = true;
+                    _readyToWrite1.store(true, std::memory_order_release);
+                    _cv1.notify_one();
                 }
-                else if (bufferToWrite == 2)
+
                 {
+                    std::unique_lock lk(_mtx2);
+                    _cv2.wait(lk, [&]
+                              { return !_readyToWrite2.load(std::memory_order_acquire); });
+
                     _inFile.read(_buffer2, _bufferSize);
 
-                    bufferToWrite = 1;
-                    _readyToWrite2 = true;
+                    _readyToWrite2.store(true, std::memory_order_release);
+                    _cv2.notify_one();
                 }
-
-                _cv.notify_one();
             }
         }
 
@@ -81,43 +76,37 @@ namespace my
                 return;
             }
 
-            uint8_t bufferToWrite = 1;
-
             while (_remainedSymbols > 0)
             {
-                std::unique_lock lk(_mtx);
-                // clang-format off
-                _cv.wait(lk, [&]
-                    { 
-                        return (bufferToWrite == 1 && _readyToWrite1) 
-                                   || (bufferToWrite == 2 && _readyToWrite2); 
-                    });
-                // clang-format on
-
-                if (bufferToWrite == 1)
                 {
+                    std::unique_lock lk(_mtx1);
+                    _cv1.wait(lk, [&]
+                              { return _readyToWrite1.load(std::memory_order_acquire); });
+
                     for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
                     {
                         _outFile.put(_buffer1[i]);
                         --_remainedSymbols;
                     }
 
-                    bufferToWrite = 2;
-                    _readyToWrite1 = false;
+                    _readyToWrite1.store(false, std::memory_order_release);
+                    _cv1.notify_one();
                 }
-                else if (bufferToWrite == 2)
+
                 {
+                    std::unique_lock lk(_mtx2);
+                    _cv2.wait(lk, [&]
+                              { return _readyToWrite2.load(std::memory_order_acquire); });
+
                     for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
                     {
                         _outFile.put(_buffer2[i]);
                         --_remainedSymbols;
                     }
 
-                    bufferToWrite = 1;
-                    _readyToWrite2 = false;
+                    _readyToWrite2.store(false, std::memory_order_release);
+                    _cv2.notify_one();
                 }
-
-                _cv.notify_one();
             }
         }
 
@@ -125,10 +114,10 @@ namespace my
         std::ifstream _inFile;
         std::ofstream _outFile;
 
-        std::mutex _mtx;
-        std::condition_variable _cv;
-        bool _readyToWrite1{false};
-        bool _readyToWrite2{false};
+        std::mutex _mtx1, _mtx2;
+        std::condition_variable _cv1, _cv2;
+        std::atomic_bool _readyToWrite1{false};
+        std::atomic_bool _readyToWrite2{false};
 
         size_t _remainedSymbols{0};
 
