@@ -43,27 +43,28 @@ int main(int argc, const char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << e.what() << '\n';
+        return EXIT_FAILURE;
     }
 
     if (in_filepath.empty())
     {
         std::cerr << "There is no file to read!\n";
-        return -1;
+        return EXIT_FAILURE;
     }
     else if (out_filepath.empty())
     {
         std::cerr << "There is no file to write!\n";
-        return -1;
+        return EXIT_FAILURE;
     }
 
     if (std::filesystem::exists(in_filepath) == false)
     {
         std::cerr << "This read file does not exist!\n";
-        return -1;
+        return EXIT_FAILURE;
     }
 
     my::copy copyInstance{in_filepath, out_filepath};
     copyInstance.run();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
