@@ -43,7 +43,7 @@ namespace my
                                       { asyncWriteToFile(); }};
 
             threadWriter.join();
-            
+
             std::cout << "1 file was copied successfully!\n";
         }
 
@@ -62,8 +62,8 @@ namespace my
             {
                 std::unique_lock lk(_mtx);
                 _cv.wait(lk, [&]
-                         { return (bufferToWrite == 1 && !_readyToWrite1) ||
-                                  (bufferToWrite == 2 && !_readyToWrite2); });
+                         { return (bufferToWrite == 1 && !_readyToWrite1.load(std::memory_order_acquire)) ||
+                                  (bufferToWrite == 2 && !_readyToWrite2.load(std::memory_order_acquire)); });
 
                 if (bufferToWrite == 1)
                 {
@@ -71,7 +71,7 @@ namespace my
                     _buf1.readSize = _inFile.gcount();
 
                     bufferToWrite = 2;
-                    _readyToWrite1 = true;
+                    _readyToWrite1.store(true, std::memory_order_release);
                 }
                 else if (bufferToWrite == 2)
                 {
@@ -79,7 +79,7 @@ namespace my
                     _buf2.readSize = _inFile.gcount();
 
                     bufferToWrite = 1;
-                    _readyToWrite2 = true;
+                    _readyToWrite2.store(true, std::memory_order_release);
                 }
 
                 _cv.notify_one();
@@ -100,8 +100,8 @@ namespace my
             {
                 std::unique_lock lk(_mtx);
                 _cv.wait(lk, [&]
-                         { return (bufferToWrite == 1 && _readyToWrite1) ||
-                                  (bufferToWrite == 2 && _readyToWrite2); });
+                         { return (bufferToWrite == 1 && _readyToWrite1.load(std::memory_order_acquire)) ||
+                                  (bufferToWrite == 2 && _readyToWrite2.load(std::memory_order_acquire)); });
 
                 if (bufferToWrite == 1)
                 {
@@ -109,7 +109,7 @@ namespace my
                     _remainedSymbols -= _buf1.readSize;
 
                     bufferToWrite = 2;
-                    _readyToWrite1 = false;
+                    _readyToWrite1.store(false, std::memory_order_release);
                 }
                 else if (bufferToWrite == 2)
                 {
@@ -117,7 +117,7 @@ namespace my
                     _remainedSymbols -= _buf2.readSize;
 
                     bufferToWrite = 1;
-                    _readyToWrite2 = false;
+                    _readyToWrite2.store(false, std::memory_order_release);
                 }
 
                 _cv.notify_one();
