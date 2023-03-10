@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
+
+set(CMAKE_TOOLCHAIN_FILE $ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
+set(VCPKG_TARGET_TRIPLET x64-windows-static)
+set(VCPKG_BUILD_TYPE x64)
+
 project(file-copy VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
