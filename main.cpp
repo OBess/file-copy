@@ -36,7 +36,7 @@ int main(int argc, const char *argv[])
 
         if (vm.count("help"))
         {
-            std::cout << desc << "\n";
+            std::cout << desc << '\n';
             return 1;
         }
     }
