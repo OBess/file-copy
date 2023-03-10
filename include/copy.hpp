@@ -10,6 +10,20 @@
 
 namespace my
 {
+    namespace detail
+    {
+
+        struct buffer
+        {
+            static constexpr std::size_t bufferSize =
+                std::hardware_destructive_interference_size - sizeof(std::size_t);
+
+            char data[bufferSize]{};
+            std::size_t readSize{};
+        };
+
+    } // namespace detail
+
     class copy
     {
     public:
@@ -29,7 +43,7 @@ namespace my
                                       { asyncWriteToFile(); }};
 
             threadWriter.join();
-
+            
             std::cout << "1 file was copied successfully!\n";
         }
 
@@ -42,29 +56,33 @@ namespace my
                 return;
             }
 
+            uint8_t bufferToWrite = 1;
+
             while (_inFile)
             {
+                std::unique_lock lk(_mtx);
+                _cv.wait(lk, [&]
+                         { return (bufferToWrite == 1 && !_readyToWrite1) ||
+                                  (bufferToWrite == 2 && !_readyToWrite2); });
+
+                if (bufferToWrite == 1)
                 {
-                    std::unique_lock lk(_mtx1);
-                    _cv1.wait(lk, [&]
-                              { return !_readyToWrite1.load(std::memory_order_acquire); });
+                    _inFile.read(_buf1.data, _buf1.bufferSize);
+                    _buf1.readSize = _inFile.gcount();
 
-                    _inFile.read(_buffer1, _bufferSize);
+                    bufferToWrite = 2;
+                    _readyToWrite1 = true;
+                }
+                else if (bufferToWrite == 2)
+                {
+                    _inFile.read(_buf2.data, _buf2.bufferSize);
+                    _buf2.readSize = _inFile.gcount();
 
-                    _readyToWrite1.store(true, std::memory_order_release);
-                    _cv1.notify_one();
+                    bufferToWrite = 1;
+                    _readyToWrite2 = true;
                 }
 
-                {
-                    std::unique_lock lk(_mtx2);
-                    _cv2.wait(lk, [&]
-                              { return !_readyToWrite2.load(std::memory_order_acquire); });
-
-                    _inFile.read(_buffer2, _bufferSize);
-
-                    _readyToWrite2.store(true, std::memory_order_release);
-                    _cv2.notify_one();
-                }
+                _cv.notify_one();
             }
         }
 
@@ -76,37 +94,33 @@ namespace my
                 return;
             }
 
+            uint8_t bufferToWrite = 1;
+
             while (_remainedSymbols > 0)
             {
+                std::unique_lock lk(_mtx);
+                _cv.wait(lk, [&]
+                         { return (bufferToWrite == 1 && _readyToWrite1) ||
+                                  (bufferToWrite == 2 && _readyToWrite2); });
+
+                if (bufferToWrite == 1)
                 {
-                    std::unique_lock lk(_mtx1);
-                    _cv1.wait(lk, [&]
-                              { return _readyToWrite1.load(std::memory_order_acquire); });
+                    _outFile.write(_buf1.data, _buf1.readSize);
+                    _remainedSymbols -= _buf1.readSize;
 
-                    for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
-                    {
-                        _outFile.put(_buffer1[i]);
-                        --_remainedSymbols;
-                    }
+                    bufferToWrite = 2;
+                    _readyToWrite1 = false;
+                }
+                else if (bufferToWrite == 2)
+                {
+                    _outFile.write(_buf2.data, _buf2.readSize);
+                    _remainedSymbols -= _buf2.readSize;
 
-                    _readyToWrite1.store(false, std::memory_order_release);
-                    _cv1.notify_one();
+                    bufferToWrite = 1;
+                    _readyToWrite2 = false;
                 }
 
-                {
-                    std::unique_lock lk(_mtx2);
-                    _cv2.wait(lk, [&]
-                              { return _readyToWrite2.load(std::memory_order_acquire); });
-
-                    for (size_t i = 0; i < _bufferSize && _remainedSymbols > 0; ++i)
-                    {
-                        _outFile.put(_buffer2[i]);
-                        --_remainedSymbols;
-                    }
-
-                    _readyToWrite2.store(false, std::memory_order_release);
-                    _cv2.notify_one();
-                }
+                _cv.notify_one();
             }
         }
 
@@ -114,17 +128,15 @@ namespace my
         std::ifstream _inFile;
         std::ofstream _outFile;
 
-        std::mutex _mtx1, _mtx2;
-        std::condition_variable _cv1, _cv2;
+        std::mutex _mtx;
+        std::condition_variable _cv;
         std::atomic_bool _readyToWrite1{false};
         std::atomic_bool _readyToWrite2{false};
 
-        size_t _remainedSymbols{0};
+        std::size_t _remainedSymbols;
 
-        static constexpr size_t _bufferSize =
-            std::hardware_destructive_interference_size;
-        char _buffer1[_bufferSize]{};
-        char _buffer2[_bufferSize]{};
+        detail::buffer _buf1;
+        detail::buffer _buf2;
     };
 } // namespace my
 
