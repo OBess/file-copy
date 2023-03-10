@@ -16,7 +16,7 @@ namespace my
         struct buffer
         {
             static constexpr std::size_t bufferSize =
-                std::hardware_destructive_interference_size - sizeof(std::size_t);
+                std::hardware_destructive_interference_size * 10 - sizeof(std::size_t);
 
             char data[bufferSize]{};
             std::size_t readSize{};
