@@ -29,9 +29,12 @@ namespace my
     public:
         copy(const std::string &in_filepath, const std::string &out_filepath)
             : _inFile{in_filepath, std::ios_base::binary},
-              _outFile{out_filepath, std::ios_base::binary},
-              _remainedSymbols{std::filesystem::file_size(in_filepath)}
+              _outFile{out_filepath, std::ios_base::binary}
         {
+            if (_inFile)
+            {
+                _remainedSymbols = std::filesystem::file_size(in_filepath);
+            }
         }
 
         /// @brief Runs two threads to async read-write data from one to another file
