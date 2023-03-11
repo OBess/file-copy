@@ -40,6 +40,12 @@ namespace my
         /// @brief Runs two threads to async read-write data from one to another file
         inline void run()
         {
+            if (!_inFile || !_outFile)
+            {
+                std::cout << "Cannot run copping because one of the two paths is invalid!\n";
+                return;
+            }
+
             std::jthread threadReader{[this]
                                       { asyncReadFile(); }};
             std::jthread threadWriter{[this]
@@ -54,11 +60,6 @@ namespace my
         /// @brief Async read data from the input file to the buffer
         inline void asyncReadFile()
         {
-            if (!_inFile)
-            {
-                return;
-            }
-
             uint8_t bufferToWrite = 1;
 
             while (_inFile)
@@ -92,11 +93,6 @@ namespace my
         /// @brief Async write data from the buffer to the output file
         inline void asyncWriteToFile()
         {
-            if (!_outFile)
-            {
-                return;
-            }
-
             uint8_t bufferToWrite = 1;
 
             while (_remainedSymbols > 0)
