@@ -1,7 +1,6 @@
 #ifndef __INCLUDE_COPY_HPP__
 #define __INCLUDE_COPY_HPP__
 
-#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -43,7 +42,7 @@ namespace my
         {
             if (!_inFile || !_outFile)
             {
-                std::cout << "Cannot run copping because one of the two paths is invalid!\n";
+                std::cerr << "Cannot run copping because one of the two paths is invalid!\n";
                 return;
             }
 
