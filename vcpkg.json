@@ -1,0 +1,8 @@
+{
+    "name": "file-copy",
+    "homepage": "https://github.com/OBess/file-copy",
+    "version": "1.0.0",
+    "dependencies": [
+        "boost-program-options"
+    ]
+}
