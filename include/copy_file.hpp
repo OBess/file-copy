@@ -25,10 +25,10 @@ namespace my
 
     } // namespace detail
 
-    class copy
+    class copy_file
     {
     public:
-        copy(const std::string &in_filepath, const std::string &out_filepath)
+        copy_file(const std::string &in_filepath, const std::string &out_filepath)
             : _inFile{in_filepath, std::ios_base::binary},
               _outFile{out_filepath, std::ios_base::binary}
         {

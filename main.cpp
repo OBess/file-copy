@@ -2,7 +2,7 @@
 
 #include <boost/program_options.hpp>
 
-#include <copy.hpp>
+#include <copy_file.hpp>
 
 int main(int argc, const char *argv[])
 {
@@ -63,7 +63,7 @@ int main(int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    my::copy copyInstance{in_filepath, out_filepath};
+    my::copy_file copyInstance{in_filepath, out_filepath};
     copyInstance.run();
 
     return EXIT_SUCCESS;

@@ -4,7 +4,7 @@ The tool to copy data from one file to another.
 ## How to use
 You can use this tool to copy any file you have access to.
 
-To start copy, just write in the command line
+To start copying file, just write in the command line
 ```
 file-copy.exe target source
 ```
