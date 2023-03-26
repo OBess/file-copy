@@ -61,8 +61,6 @@ namespace my
         /// @brief Async read data from the input file to the buffer
         inline void asyncReadFile()
         {
-            uint8_t bufferToWrite = 1;
-
             while (_inFile)
             {
                 if (_sizeOfBufferQueue > _bufferQueue.size())
