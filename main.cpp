@@ -57,6 +57,12 @@ int main(int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
+    if (in_filepath == out_filepath)
+    {
+        std::cerr << "The filepathes are same!\n";
+        return EXIT_FAILURE;
+    }
+
     if (std::filesystem::exists(in_filepath) == false)
     {
         std::cerr << "This read file does not exist!\n";
